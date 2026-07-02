@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma de Cursos - Aprendizado Sequencial</title>
+  
+  <!-- Tailwind CSS para estilização rápida e responsiva -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons para vetores de interface limpos -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    /* Aspect Ratio padrão para garantir responsividade perfeita do vídeo do YouTube */
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* Proporção 16:9 */
+      height: 0;
+      overflow: hidden;
+    }
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* Suavização de interações */
+    .btn-transition {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-height-screen flex flex-col">
+
+  <!-- Header / Barra de Topo -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
+          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-slate-900">InfoSoc</h1>
+          <p class="text-xs text-slate-500">Diálogos com a Inteligência Artificial - NotebookLM</p>
+        </div>
+      </div>
+      
+      <!-- Progresso Geral do Curso -->
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:block text-right">
+          <span class="text-xs text-slate-500 block font-medium">Progresso Geral</span>
+          <span id="progress-text" class="text-sm font-bold text-slate-800">0% Concluído</span>
+        </div>
+        <div class="w-32 bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+          <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-500"></div>
+        </div>
+        <button onclick="resetCourseProgress()" class="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-slate-100" title="Reiniciar Progresso">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Principal do Curso -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+    
+    <!-- Painel Lateral de Navegação (Módulos) -->
+    <aside class="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm h-fit">
+      <h2 class="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
+        <i data-lucide="list-video" class="w-5 h-5 text-blue-600"></i>
+        Módulos do Curso
+      </h2>
+      
+      <div id="modules-list" class="space-y-3">
+        <!-- Gerado dinamicamente via JavaScript -->
+      </div>
+    </aside>
+
+    <!-- Área de Conteúdo (Player de Vídeo e Quiz) -->
+    <section class="lg:col-span-8 space-y-6">
+      
+      <!-- Cabeçalho do Módulo Ativo -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 block" id="current-badge">Módulo 1</span>
+        <h2 class="text-2xl font-extrabold text-slate-900 mb-2" id="current-title">Carregando...</h2>
+        <p class="text-slate-600 text-sm leading-relaxed" id="current-desc">Aguarde um instante enquanto a plataforma inicializa os componentes.</p>
+      </div>
+
+      <!-- Player de Vídeo -->
+      <div class="bg-black rounded-2xl overflow-hidden shadow-lg border border-slate-200">
+        <div class="video-container">
+          <div id="youtube-player"></div>
+        </div>
+      </div>
+
+      <!-- Área de Engajamento: Quiz ou Aviso de Bloqueio -->
+      <div id="quiz-container">
+        <!-- Gerado dinamicamente dependendo do progresso do vídeo -->
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
+      <p>© 2025 InfoSoc. Conteúdo criado pelo Prof. Ronaldo Baltar.</p>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-blue-600 transition-colors">Termos</a>
+        <a href="#" class="hover:text-blue-600 transition-colors">Suporte</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script principal de Lógica do Sistema -->
+  <script>
+    // Configurações das aulas e desafios do curso
+    const modulesData = [
+      {
+        id: 1,
+        title: "1. Introdução ao R e RStudio",
+        badge: "Módulo Inicial",
+        description: "Compreenda a filosofia de software livre do ecossistema R, os painéis do RStudio e declare suas primeiras atribuições lógicas no console.",
+        youtubeId: "v72fWe7e870", // ID do vídeo no YouTube
+        quiz: {
+          question: "Qual operador no R é convencionalmente utilizado para atribuição de valores a variáveis?",
+          options: [
+            "O operador de igualdade (=)",
+            "O operador de atribuição clássico (<-)",
+            "O operador de atribuição de fluxo (->)",
+            "A função assign_to()"
+          ],
+          correctIndex: 1,
+          explanation: "O operador clássico de atribuição no R é o `<-`. Embora o sinal de igual `=` funcione, o operador de seta é o padrão de estilo da linguagem e previne problemas em escopos complexos."
+        }
+      },
+      {
+        id: 2,
+        title: "2. Manipulação com Tidyverse",
+        badge: "Fundamentos do Tidyverse",
+        description: "Aprenda a importar arquivos planos e a moldar linhas e colunas utilizando os pacotes dplyr e tidyr.",
+        youtubeId: "TCOCOr9VfVw",
+        quiz: {
+          question: "Qual função do dplyr é utilizada especificamente para filtrar observações (linhas) baseadas em critérios?",
+          options: [
+            "select()",
+            "mutate()",
+            "filter()",
+            "arrange()"
+          ],
+          correctIndex: 2,
+          explanation: "A função `filter()` seleciona as linhas que atendem a uma condição lógica específica, enquanto a função `select()` serve para filtrar colunas."
+        }
+      },
+      {
+        id: 3,
+        title: "3. Visualização Estética com ggplot2",
+        badge: "A Arte dos Dados",
+        description: "Entenda o modelo mental da gramática de gráficos para desenhar visualizações altamente customizadas e informativas.",
+        youtubeId: "h29g21z0aMw",
+        quiz: {
+          question: "Qual camada geométrica do ggplot2 é adequada para a criação de um gráfico de dispersão?",
+          options: [
+            "geom_line()",
+            "geom_point()",
+            "geom_bar()",
+            "geom_histogram()"
+          ],
+          correctIndex: 1,
+          explanation: "Em gráficos de dispersão, os dados são renderizados como pontos individuais usando as coordenadas X e Y, o que é feito no ggplot2 através de `geom_point()`."
+        }
+      }
+    ];
+
+    // Gerenciador de Estado reativo
+    let state = {
+      currentModuleIndex: 0,
+      unlockedModules: [1],  // Módulo 1 começa destravado
+      watchedVideos: [],     // IDs dos módulos com vídeos assistidos
+      completedQuizzes: []   // IDs dos módulos com quizzes resolvidos
+    };
+
+    let player;
+
+    // Inicialização da API do YouTube
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // Carregar dados salvos ou criar novos no carregamento inicial
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedState = localStorage.getItem('course_progress_html');
+      if (savedState) {
+        try {
+          state = JSON.parse(savedState);s
+        } catch (e) {
+          console.error("Erro ao importar o estado de progresso.", e);
+        }
+      }
+      lucide.createIcons();
+    });
+
+    // Função chamada de forma callback pelo YouTube Iframe API
+    window.onYouTubeIframeAPIReady = function() {
+      loadModule(state.currentModuleIndex);
+    };
+
+    // Carregar dados e recriar o player para o módulo correspondente
+    function loadModule(index) {
+      state.currentModuleIndex = index;
+      saveProgress();
+      
+      const currentModule = modulesData[index];
+      
+      // Atualizar textos descritivos
+      document.getElementById('current-badge').innerText = currentModule.badge;
+      document.getElementById('current-title').innerText = currentModule.title;
+      document.getElementById('current-desc').innerText = currentModule.description;
+      
+      // Reinicializar player do YouTube
+      if (player) {
+        player.destroy();
+      }
+      
+      player = new YT.Player('youtube-player', {
+        videoId: currentModule.youtubeId,
+        playerVars: {
+          'rel': 0,
+          'modestbranding': 1,
+          'playsinline': 1,
+          'autoplay': 0
+        },
+        events: {
+          'onStateChange': handleVideoStateChange
+        }
+      });
+
+      renderSidebar();
+      renderQuizArea();
+      updateGlobalProgress();
+    }
+
+    // Ouvir alterações no Player de Vídeo
+    function handleVideoStateChange(event) {
+      const currentModule = modulesData[state.currentModuleIndex];
+      
+      // Quando o vídeo termina completamente (YT.PlayerState.ENDED)
+      if (event.data === YT.PlayerState.ENDED) {
+        if (!state.watchedVideos.includes(currentModule.id)) {
+          state.watchedVideos.push(currentModule.id);
+          saveProgress();
+          renderQuizArea();
+        }
+      }
+    }
+
+    // Renderizar painel lateral
+    function renderSidebar() {
+      const container = document.getElementById('modules-list');
+      container.innerHTML = '';
+      
+      modulesData.forEach((mod, index) => {
+        const isCurrent = state.currentModuleIndex === index;
+        const isLocked = !state.unlockedModules.includes(mod.id);
+        const isCompleted = state.completedQuizzes.includes(mod.id);
+        
+        const item = document.createElement('button');
+        item.disabled = isLocked;
+        item.className = `w-full text-left p-4 rounded-xl border text-sm font-medium flex items-center justify-between btn-transition ${
+          isCurrent 
+            ? 'bg-blue-50 border-blue-200 text-blue-900 shadow-sm ring-1 ring-blue-100' 
+            : isLocked 
+              ? 'bg-slate-100/50 border-slate-200 text-slate-400 cursor-not-allowed opacity-75' 
+              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+        }`;
+        
+        if (!isLocked) {
+          item.onclick = () => loadModule(index);
+        }
+
+        let iconMarkup = '<i data-lucide="lock" class="w-4 h-4 text-slate-400"></i>';
+        if (!isLocked) {
+          iconMarkup = isCompleted 
+            ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 fill-emerald-50/50"></i>' 
+            : '<i data-lucide="play-circle" class="w-5 h-5 text-blue-500"></i>';
+        }
+
+        item.innerHTML = `
+          <div class="flex flex-col gap-0.5 max-w-[85%]">
+            <span class="truncate font-semibold">${mod.title}</span>
+            <span class="text-xs ${isCurrent ? 'text-blue-500' : isLocked ? 'text-slate-400' : 'text-slate-500'}">
+              ${isLocked ? 'Assista o módulo anterior' : isCompleted ? 'Módulo concluído' : 'Aguardando quiz'}
+            </span>
+          </div>
+          <div class="flex-shrink-0">${iconMarkup}</div>
+        `;
+        
+        container.appendChild(item);
+      });
+      lucide.createIcons();
+    }
+
+    // Renderizar seção de Quiz ou Bloqueio
+    function renderQuizArea() {
+      const container = document.getElementById('quiz-container');
+      const currentModule = modulesData[state.currentModuleIndex];
+      
+      const hasWatched = state.watchedVideos.includes(currentModule.id);
+      const hasCompletedQuiz = state.completedQuizzes.includes(currentModule.id);
+      
+      // Estado: Bloqueado (Vídeo não assistido e não completado anteriormente)
+      if (!hasWatched && !hasCompletedQuiz) {
+        container.innerHTML = `
+          <div class="bg-white border border-slate-200 border-dashed rounded-2xl p-8 flex flex-col items-center text-center">
+            <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4">
+              <i data-lucide="lock" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-base mb-1">Quiz Indisponível</h4>
+            <p class="text-sm text-slate-500 max-w-md">
+              O quiz de avaliação deste módulo será liberado assim que você terminar de assistir ao vídeo explicativo por completo.
+            </p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      // Estado: Disponível para Responder ou Já Concluído
+      const quiz = currentModule.quiz;
+      let optionsHtml = '';
+      
+      quiz.options.forEach((option, idx) => {
+        optionsHtml += `
+          <button id="opt-btn-${idx}" onclick="submitAnswer(${idx})" class="w-full text-left p-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium text-sm transition-all flex items-start gap-3 bg-white">
+            <span class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-xs text-slate-500 flex-shrink-0 mt-0.5 font-bold">${String.fromCharCode(65 + idx)}</span>
+            <span>${option}</span>
+          </button>
+        `;
+      });
+
+      container.innerHTML = `
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div class="flex items-center gap-2 text-emerald-600 font-semibold text-sm">
+            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+            <span>Verificação de Conhecimento</span>
+          </div>
+          <h3 class="font-bold text-slate-900 text-lg">${quiz.question}</h3>
+          
+          <div class="grid grid-cols-1 gap-3 pt-2">
+            ${optionsHtml}
+          </div>
+          
+          <div id="quiz-feedback" class="pt-2"></div>
+        </div>
+      `;
+      
+      lucide.createIcons();
+
+      // Caso o estudante já tenha resolvido este quiz no passado
+      if (hasCompletedQuiz) {
+        revealSolvedState(quiz.correctIndex);
+      }
+    }
+
+    // Processar escolha de resposta do estudante
+    window.submitAnswer = function(selectedIndex) {
+      const currentModule = modulesData[state.currentModuleIndex];
+      const quiz = currentModule.quiz;
+      const feedbackArea = document.getElementById('quiz-feedback');
+      
+      // Desativar novos cliques
+      disableOptions();
+      
+      const selectedBtn = document.getElementById(`opt-btn-${selectedIndex}`);
+      
+      if (selectedIndex === quiz.correctIndex) {
+        selectedBtn.className = "w-full text-left p-4 border border-emerald-300 bg-emerald-50 rounded-xl font-medium text-sm transition-all flex items-start gap-3 text-emerald-900";
+        feedbackArea.innerHTML = `
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-900 text-sm mt-4">
+            <div class="flex items-center gap-2 font-bold mb-1">
+              <i data-lucide="smile" class="w-4 h-4 text-emerald-600"></i>
+              <span>Fantástico! Resposta correta.</span>
+            </div>
+            <p>${quiz.explanation}</p>
+          </div>
+          ${getNextActionMarkup()}
+        `;
+        
+        // Atualizar estados de conclusão e desbloquear próximos
+        if (!state.completedQuizzes.includes(currentModule.id)) {
+          state.completedQuizzes.push(currentModule.id);
+          
+          const nextMod = modulesData[state.currentModuleIndex + 1];
+          if (nextMod && !state.unlockedModules.includes(nextMod.id)) {
+            state.unlockedModules.push(nextMod.id);
+          }
+          saveProgress();
+          renderSidebar();
+          updateGlobalProgress();
+        }
+      } else {
+        selectedBtn.className = "w-full text-left p-4 border border-rose-300 bg-rose-50 rounded-xl font-medium text-sm transition-all flex items-start gap-3 text-rose-900";
+        feedbackArea.innerHTML = `
+          <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-900 text-sm mt-4">
+            <div class="flex items-center gap-2 font-bold mb-1">
+              <i data-lucide="frown" class="w-4 h-4 text-rose-600"></i>
+              <span>Resposta incorreta</span>
+            </div>
+            <p>Revise a explicação no vídeo e tente novamente.</p>
+          </div>
+          <button onclick="retryQuiz()" class="mt-4 px-4 py-2 bg-slate-800 text-white rounded-lg font-medium text-sm hover:bg-slate-700 btn-transition flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            Tentar Novamente
+          </button>
+        `;
+      }
+      lucide.createIcons();
+    };
+
+    // Auxiliar para travar botões
+    function disableOptions() {
+      const buttons = document.querySelectorAll('[id^="opt-btn-"]');
+      buttons.forEach(btn => btn.disabled = true);
+    }
+
+    // Exibir feedback direto para quizzes já marcados como corretos
+    function revealSolvedState(correctIdx) {
+      disableOptions();
+      const correctBtn = document.getElementById(`opt-btn-${correctIdx}`);
+      if (correctBtn) {
+        correctBtn.className = "w-full text-left p-4 border border-emerald-300 bg-emerald-50 rounded-xl font-medium text-sm transition-all flex items-start gap-3 text-emerald-900";
+      }
+      
+      const feedbackArea = document.getElementById('quiz-feedback');
+      feedbackArea.innerHTML = `
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-emerald-900 text-sm mt-4">
+          <div class="flex items-center gap-2 font-bold mb-1">
+            <i data-lucide="badge-check" class="w-5 h-5 text-emerald-600"></i>
+            <span>Módulo Concluído com Sucesso!</span>
+          </div>
+          <p>${modulesData[state.currentModuleIndex].quiz.explanation}</p>
+        </div>
+        ${getNextActionMarkup()}
+      `;
+      lucide.createIcons();
+    }
+
+    // Determinar qual botão aparecerá no fim da resposta
+    function getNextActionMarkup() {
+      const isLast = state.currentModuleIndex === modulesData.length - 1;
+      if (isLast) {
+        return `
+          <div class="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-900 text-sm flex items-center gap-3">
+            <i data-lucide="party-popper" class="w-6 h-6 text-blue-600"></i>
+            <span class="font-semibold">Parabéns! Você completou todo o treinamento com aproveitamento máximo!</span>
+          </div>
+        `;
+      } else {
+        return `
+          <button onclick="advanceModule()" class="mt-4 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm btn-transition flex items-center gap-2 shadow-sm">
+            Avançar para o Próximo Módulo
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        `;
+      }
+    }
+
+    // Ações de fluxo de navegação
+    window.retryQuiz = function() {
+      renderQuizArea();
+    };
+
+    window.advanceModule = function() {
+      if (state.currentModuleIndex < modulesData.length - 1) {
+        loadModule(state.currentModuleIndex + 1);
+      }
+    };
+
+    // Atualização de Barra de Progresso do Header
+    function updateGlobalProgress() {
+      const totalModules = modulesData.length;
+      const completedCount = state.completedQuizzes.length;
+      const percent = Math.round((completedCount / totalModules) * 100);
+      
+      document.getElementById('progress-bar').style.width = `${percent}%`;
+      document.getElementById('progress-text').innerText = `${percent}% Concluído`;
+    }
+
+    // Gerenciador de Armazenamento Local
+    function saveProgress() {
+      localStorage.setItem('course_progress_html', JSON.stringify(state));
+    }
+
+    window.resetCourseProgress = function() {
+      if (confirm("Deseja realmente limpar seu progresso neste navegador e começar do início?")) {
+        localStorage.removeItem('course_progress_html');
+        state = {
+          currentModuleIndex: 0,
+          unlockedModules: [1],
+          watchedVideos: [],
+          completedQuizzes: []
+        };
+        loadModule(0);
+      }
+    };
+  </script>
+</body>
+</html>
